@@ -1,6 +1,6 @@
 {
   "name": "@yuri_chamblas/repo-context",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate clean, LLM-ready context files for any codebase.",
   "type": "module",
   "publishConfig": {
