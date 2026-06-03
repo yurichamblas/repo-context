@@ -30,11 +30,11 @@ workflows start by dumping too much code into the model, which means:
 ## Try it (no install)
 
 ```bash
-npx @yurichamblas/repo-context generate
+npx @yuri_chamblas/repo-context generate
 ```
 
 (The first run asks to confirm the download. Add args like
-`npx @yurichamblas/repo-context generate --profile claude`.)
+`npx @yuri_chamblas/repo-context generate --profile claude`.)
 
 You can also run it straight from GitHub without npm:
 
@@ -45,7 +45,7 @@ npx github:yurichamblas/repo-context generate
 ## Install
 
 ```bash
-npm install -g @yurichamblas/repo-context
+npm install -g @yuri_chamblas/repo-context
 repo-context generate
 ```
 
