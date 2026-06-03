@@ -1,8 +1,11 @@
 {
-  "name": "repo-context",
+  "name": "@yurichamblas/repo-context",
   "version": "0.1.0",
   "description": "Generate clean, LLM-ready context files for any codebase.",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "repo-context": "./dist/cli.js"
   },
@@ -30,6 +33,14 @@
   ],
   "author": "Yuri Chamblas",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yurichamblas/repo-context.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yurichamblas/repo-context/issues"
+  },
+  "homepage": "https://github.com/yurichamblas/repo-context#readme",
   "dependencies": {
     "commander": "^14.0.0",
     "fast-glob": "^3.3.3",
