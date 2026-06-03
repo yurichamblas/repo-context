@@ -14,10 +14,10 @@
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc",
-    "prepare": "npm run build",
     "start": "node dist/cli.js",
     "generate": "tsx src/cli.ts generate",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "cli",
