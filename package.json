@@ -7,7 +7,7 @@
     "access": "public"
   },
   "bin": {
-    "repo-context": "./dist/cli.js"
+    "repo-context": "dist/cli.js"
   },
   "files": [
     "dist",

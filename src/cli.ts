@@ -1,16 +1,22 @@
 #!/usr/bin/env node
 
+import { createRequire } from "node:module";
 import { Command } from "commander";
 import { generateRepoContext } from "./generate.js";
 import { DEFAULT_MAX_DEPTH, DEFAULT_OUTPUT_FILE } from "./config/defaults.js";
 import type { OutputProfile } from "./types.js";
+
+// Read the version from package.json so it never drifts from the published
+// release. Resolves to the package root from both src (tsx) and dist (node).
+const pkgRequire = createRequire(import.meta.url);
+const { version } = pkgRequire("../package.json") as { version: string };
 
 const program = new Command();
 
 program
   .name("repo-context")
   .description("Generate clean, LLM-ready context files for any codebase.")
-  .version("0.1.0");
+  .version(version);
 
 program
   .command("generate")
