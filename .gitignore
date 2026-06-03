@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 *.tsbuildinfo
+*.tgz
 
 # Generated context output (machine-specific: absolute paths + timestamps)
 /repo-context.md
