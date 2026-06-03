@@ -1,0 +1,45 @@
+{
+  "name": "repo-context",
+  "version": "0.1.0",
+  "description": "Generate clean, LLM-ready context files for any codebase.",
+  "type": "module",
+  "bin": {
+    "repo-context": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "generate": "tsx src/cli.ts generate",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "cli",
+    "llm",
+    "ai",
+    "developer-tools",
+    "codebase",
+    "context",
+    "markdown"
+  ],
+  "author": "Yuri Chamblas",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.0",
+    "fast-glob": "^3.3.3",
+    "ignore": "^7.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
