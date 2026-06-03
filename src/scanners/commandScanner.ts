@@ -1,5 +1,8 @@
 import path from "node:path";
+import fg from "fast-glob";
 import { readJsonFile, readTextFile } from "../utils/file.js";
+import { toPosixPath } from "../utils/path.js";
+import { SCAN_IGNORE_GLOBS } from "../config/defaults.js";
 import type { CommandInfo } from "../types.js";
 
 interface PackageJson {
@@ -9,47 +12,66 @@ interface PackageJson {
 export async function scanCommands(rootDir: string): Promise<CommandInfo[]> {
   const commands: CommandInfo[] = [];
 
-  const packageJson = await readJsonFile<PackageJson>(
-    path.join(rootDir, "package.json")
-  );
+  const [packageJsonFiles, makefiles, composeFiles] = await Promise.all([
+    fg(["**/package.json"], {
+      cwd: rootDir,
+      ignore: SCAN_IGNORE_GLOBS,
+      onlyFiles: true
+    }),
+    fg(["**/Makefile"], {
+      cwd: rootDir,
+      ignore: SCAN_IGNORE_GLOBS,
+      onlyFiles: true
+    }),
+    fg(["**/docker-compose.yml", "**/docker-compose.yaml", "**/compose.yml", "**/compose.yaml"], {
+      cwd: rootDir,
+      ignore: SCAN_IGNORE_GLOBS,
+      onlyFiles: true
+    })
+  ]);
 
-  if (packageJson?.scripts) {
+  for (const relativePath of packageJsonFiles.sort()) {
+    const packageJson = await readJsonFile<PackageJson>(
+      path.join(rootDir, relativePath)
+    );
+    if (!packageJson?.scripts) continue;
+
+    const source = toPosixPath(relativePath);
+    const dir = path.posix.dirname(source);
+    const prefix = dir === "." ? "" : `cd ${dir} && `;
+
     for (const scriptName of Object.keys(packageJson.scripts)) {
       commands.push({
-        source: "package.json",
-        command: `npm run ${scriptName}`,
+        source,
+        command: `${prefix}npm run ${scriptName}`,
         description: packageJson.scripts[scriptName]
       });
     }
   }
 
-  const makefile = await readTextFile(path.join(rootDir, "Makefile"));
+  for (const relativePath of makefiles.sort()) {
+    const content = await readTextFile(path.join(rootDir, relativePath));
+    if (!content) continue;
 
-  if (makefile) {
-    const targets = parseMakefileTargets(makefile);
+    const source = toPosixPath(relativePath);
+    const dir = path.posix.dirname(source);
+    const prefix = dir === "." ? "" : `cd ${dir} && `;
 
-    for (const target of targets) {
+    for (const target of parseMakefileTargets(content)) {
       commands.push({
-        source: "Makefile",
-        command: `make ${target}`
+        source,
+        command: `${prefix}make ${target}`
       });
     }
   }
 
-  const dockerCompose =
-    (await readTextFile(path.join(rootDir, "docker-compose.yml"))) ??
-    (await readTextFile(path.join(rootDir, "docker-compose.yaml")));
+  for (const relativePath of composeFiles.sort()) {
+    const source = toPosixPath(relativePath);
+    const dir = path.posix.dirname(source);
+    const prefix = dir === "." ? "" : `cd ${dir} && `;
 
-  if (dockerCompose) {
-    commands.push({
-      source: "docker-compose",
-      command: "docker compose up"
-    });
-
-    commands.push({
-      source: "docker-compose",
-      command: "docker compose down"
-    });
+    commands.push({ source, command: `${prefix}docker compose up` });
+    commands.push({ source, command: `${prefix}docker compose down` });
   }
 
   return commands;

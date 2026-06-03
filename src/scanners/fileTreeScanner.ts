@@ -9,7 +9,7 @@ export async function scanFileTree(
   rootDir: string,
   maxDepth: number
 ): Promise<string> {
-  const ig = ignore().add(expandDirectoryPatterns(DEFAULT_IGNORE_PATTERNS));
+  const ig = ignore().add(DEFAULT_IGNORE_PATTERNS);
 
   const gitignore = await readTextFile(path.join(rootDir, ".gitignore"));
   if (gitignore) {
@@ -20,24 +20,6 @@ export async function scanFileTree(
   await walkDirectory(rootDir, rootDir, lines, ig, "", 0, maxDepth);
 
   return lines.join("\n");
-}
-
-/**
- * A pattern like `node_modules/**` only matches the *contents* of the folder,
- * not the folder itself, so the directory entry would still be walked. Adding
- * the bare `node_modules` form lets us prune the directory outright.
- */
-function expandDirectoryPatterns(patterns: string[]): string[] {
-  const expanded = new Set<string>();
-
-  for (const pattern of patterns) {
-    expanded.add(pattern);
-    if (pattern.endsWith("/**")) {
-      expanded.add(pattern.slice(0, -3));
-    }
-  }
-
-  return Array.from(expanded);
 }
 
 async function walkDirectory(
@@ -61,17 +43,7 @@ async function walkDirectory(
   }
 
   const visibleEntries = entries
-    .filter((entry) => {
-      const absolutePath = path.join(currentDir, entry.name);
-      const relativePath = toPosixPath(path.relative(rootDir, absolutePath));
-
-      if (!relativePath) {
-        return true;
-      }
-
-      const probe = entry.isDirectory() ? `${relativePath}/` : relativePath;
-      return !ig.ignores(probe);
-    })
+    .filter((entry) => !isIgnored(rootDir, currentDir, entry, ig))
     .sort((a, b) => {
       if (a.isDirectory() && !b.isDirectory()) return -1;
       if (!a.isDirectory() && b.isDirectory()) return 1;
@@ -100,4 +72,25 @@ async function walkDirectory(
       );
     }
   }
+}
+
+function isIgnored(
+  rootDir: string,
+  currentDir: string,
+  entry: { name: string; isDirectory: () => boolean },
+  ig: ReturnType<typeof ignore>
+): boolean {
+  const absolutePath = path.join(currentDir, entry.name);
+  const relativePath = toPosixPath(path.relative(rootDir, absolutePath));
+
+  if (!relativePath) {
+    return false;
+  }
+
+  // Directory-only patterns (e.g. `tmp*/`) require the trailing slash to match.
+  if (ig.ignores(relativePath)) {
+    return true;
+  }
+
+  return entry.isDirectory() && ig.ignores(`${relativePath}/`);
 }

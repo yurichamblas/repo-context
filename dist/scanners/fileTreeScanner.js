@@ -5,7 +5,7 @@ import { DEFAULT_IGNORE_PATTERNS } from "../config/defaults.js";
 import { toPosixPath } from "../utils/path.js";
 import { readTextFile } from "../utils/file.js";
 export async function scanFileTree(rootDir, maxDepth) {
-    const ig = ignore().add(expandDirectoryPatterns(DEFAULT_IGNORE_PATTERNS));
+    const ig = ignore().add(DEFAULT_IGNORE_PATTERNS);
     const gitignore = await readTextFile(path.join(rootDir, ".gitignore"));
     if (gitignore) {
         ig.add(gitignore);
@@ -13,21 +13,6 @@ export async function scanFileTree(rootDir, maxDepth) {
     const lines = ["."];
     await walkDirectory(rootDir, rootDir, lines, ig, "", 0, maxDepth);
     return lines.join("\n");
-}
-/**
- * A pattern like `node_modules/**` only matches the *contents* of the folder,
- * not the folder itself, so the directory entry would still be walked. Adding
- * the bare `node_modules` form lets us prune the directory outright.
- */
-function expandDirectoryPatterns(patterns) {
-    const expanded = new Set();
-    for (const pattern of patterns) {
-        expanded.add(pattern);
-        if (pattern.endsWith("/**")) {
-            expanded.add(pattern.slice(0, -3));
-        }
-    }
-    return Array.from(expanded);
 }
 async function walkDirectory(rootDir, currentDir, lines, ig, prefix, depth, maxDepth) {
     if (depth >= maxDepth) {
@@ -41,15 +26,7 @@ async function walkDirectory(rootDir, currentDir, lines, ig, prefix, depth, maxD
         return;
     }
     const visibleEntries = entries
-        .filter((entry) => {
-        const absolutePath = path.join(currentDir, entry.name);
-        const relativePath = toPosixPath(path.relative(rootDir, absolutePath));
-        if (!relativePath) {
-            return true;
-        }
-        const probe = entry.isDirectory() ? `${relativePath}/` : relativePath;
-        return !ig.ignores(probe);
-    })
+        .filter((entry) => !isIgnored(rootDir, currentDir, entry, ig))
         .sort((a, b) => {
         if (a.isDirectory() && !b.isDirectory())
             return -1;
@@ -67,4 +44,16 @@ async function walkDirectory(rootDir, currentDir, lines, ig, prefix, depth, maxD
             await walkDirectory(rootDir, path.join(currentDir, entry.name), lines, ig, childPrefix, depth + 1, maxDepth);
         }
     }
+}
+function isIgnored(rootDir, currentDir, entry, ig) {
+    const absolutePath = path.join(currentDir, entry.name);
+    const relativePath = toPosixPath(path.relative(rootDir, absolutePath));
+    if (!relativePath) {
+        return false;
+    }
+    // Directory-only patterns (e.g. `tmp*/`) require the trailing slash to match.
+    if (ig.ignores(relativePath)) {
+        return true;
+    }
+    return entry.isDirectory() && ig.ignores(`${relativePath}/`);
 }

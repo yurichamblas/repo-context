@@ -2,23 +2,25 @@ import fg from "fast-glob";
 import type { ImportantFile } from "../types.js";
 import {
   IMPORTANT_FILE_PATTERNS,
-  DEFAULT_IGNORE_PATTERNS
+  SCAN_IGNORE_GLOBS
 } from "../config/defaults.js";
 
 export async function scanImportantFiles(
   rootDir: string
 ): Promise<ImportantFile[]> {
-  const files = await fg(IMPORTANT_FILE_PATTERNS, {
+  // Match each pattern recursively so nested manifests/configs in a monorepo
+  // (e.g. frontend/package.json, Backend_Python/pyproject.toml) are included.
+  const patterns = IMPORTANT_FILE_PATTERNS.map((pattern) => `**/${pattern}`);
+
+  const files = await fg(patterns, {
     cwd: rootDir,
     onlyFiles: true,
     dot: true,
-    ignore: DEFAULT_IGNORE_PATTERNS
+    ignore: SCAN_IGNORE_GLOBS
   });
 
-  // Case-insensitive filesystems (Windows/macOS) can resolve a single file via
-  // multiple patterns of differing case (e.g. README.md and readme.md both hit
-  // the same file). Collapse those by lowercased path, keeping a deterministic
-  // representative, so the output never lists the same file twice.
+  // Case-insensitive filesystems can resolve one file via multiple patterns of
+  // differing case (README.md / readme.md). Collapse by lowercased path.
   const byKey = new Map<string, string>();
   for (const file of files) {
     const key = file.toLowerCase();
@@ -39,9 +41,13 @@ export async function scanImportantFiles(
 function getReason(filePath: string): string {
   const lower = filePath.toLowerCase();
 
-  if (lower.endsWith("readme.md")) return "Main project documentation.";
+  if (lower.endsWith("readme.md")) return "Documentation.";
   if (lower.endsWith("package.json"))
     return "Node.js metadata, dependencies and scripts.";
+  if (lower.endsWith("pnpm-workspace.yaml")) return "pnpm workspace definition.";
+  if (lower.endsWith("turbo.json")) return "Turborepo monorepo configuration.";
+  if (lower.endsWith("nx.json")) return "Nx monorepo configuration.";
+  if (lower.endsWith("lerna.json")) return "Lerna monorepo configuration.";
   if (lower.endsWith("pyproject.toml")) return "Python project configuration.";
   if (lower.endsWith("requirements.txt")) return "Python dependencies.";
   if (lower.endsWith("pipfile")) return "Python dependencies (pipenv).";
@@ -49,7 +55,7 @@ function getReason(filePath: string): string {
   if (lower.endsWith("cargo.toml")) return "Rust crate manifest.";
   if (lower.endsWith("go.mod")) return "Go module definition.";
   if (lower.endsWith("dockerfile")) return "Container build definition.";
-  if (lower.includes("docker-compose"))
+  if (lower.includes("docker-compose") || lower.endsWith("compose.yml") || lower.endsWith("compose.yaml"))
     return "Local multi-service runtime configuration.";
   if (lower.endsWith("makefile")) return "Common project commands.";
   if (lower.endsWith(".env.example"))

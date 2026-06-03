@@ -86,6 +86,15 @@ repo-context generate --profile codex
 - **Folder structure**: a compact tree that respects `.gitignore` and ignores
   noisy/generated folders.
 
+### Monorepo-aware
+
+Detection runs **recursively**, so polyglot monorepos are covered: a nested
+`frontend/package.json`, `backend/requirements.txt`, or `service/*.csproj` all
+contribute to the stack, commands, important files and environment variables —
+each command is shown with the subfolder to run it from. Noisy folders
+(`node_modules`, `dist`, `build`, `__pycache__`, temp/scratch dirs, agent
+worktrees, …) are pruned at any depth.
+
 ## Privacy
 
 - Runs entirely on your machine.
