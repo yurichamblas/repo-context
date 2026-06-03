@@ -27,17 +27,44 @@ workflows start by dumping too much code into the model, which means:
 
 > repo dump is not repo context.
 
+## Try it (no install)
+
+```bash
+npx github:yurichamblas/repo-context generate
+```
+
+(The first run asks to confirm the download. Add args like
+`npx github:yurichamblas/repo-context generate --profile claude`.)
+
 ## Install
+
+From npm (once published):
 
 ```bash
 npm install -g repo-context
+repo-context generate
 ```
+
+From GitHub — clone and link (reliable on every platform):
+
+```bash
+git clone https://github.com/yurichamblas/repo-context
+cd repo-context
+npm install
+npm install -g .          # or: npm link
+repo-context generate
+```
+
+> Heads-up: `npm install -g github:yurichamblas/repo-context` does **not** work —
+> npm omits the prebuilt `dist/` when installing a *git* dependency globally. Use
+> `npx` or the clone-and-link method above instead.
 
 ## Development
 
 ```bash
 npm install
-npm run dev -- generate
+npm run dev -- generate          # run from source via tsx
+npm run build                    # compile to dist/
 ```
 
 ## Usage
